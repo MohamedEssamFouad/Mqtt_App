@@ -45,5 +45,12 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- Added Bluetooth Permissions -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>App requires Bluetooth access to connect to BLE Kits.</string>
+
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>App needs Bluetooth to communicate with the Kit.</string>
 </dict>
 </plist>
