@@ -10,77 +10,77 @@ class MQTTManager {
 
   Future<void> setupMQTT() async {
     if (_isConnecting) return; ///prevent multiple connections
+
     _isConnecting = true;
 
     mqttClient = MqttServerClient('broker.emqx.io', 'flutter_client_1234');
     mqttClient.port = 1883; // Default MQTT Port
     mqttClient.logging(on: true);
-    mqttClient.keepAlivePeriod = 60;
+    mqttClient.keepAlivePeriod = 60; ///make it alive every 60sec it open again
     mqttClient.onDisconnected = onDisconnected;
     mqttClient.onConnected = onConnected;
     mqttClient.onSubscribed = onSubscribed;
 
-    final connMessage = MqttConnectMessage()
+    final connMessage = MqttConnectMessage() ///create the connection
         .withClientIdentifier("flutter_client_1234")
-        .startClean();
+        .startClean(); ///no session is saved between connections
 
     mqttClient.connectionMessage = connMessage;
 
     try {
       await mqttClient.connect();
       if (mqttClient.connectionStatus?.state == MqttConnectionState.connected) {
-        print("✅ MQTT Connected Successfully");
+        print("MQTT Connected doneeeeeeeeee");
       } else {
-        print("❌ MQTT Connection Failed: ${mqttClient.connectionStatus}");
+        print(" MQTT Connection Failed with erroror: ${mqttClient.connectionStatus}");
         mqttClient.disconnect();
       }
     } catch (e) {
-      print("❌ MQTT Connection Exception: $e");
+      print(" MQTT Connection Exception: $e");
       mqttClient.disconnect();
     } finally {
       _isConnecting = false;
     }
   }
 
-  void onConnected() => print("✅ MQTT Connected!");
-  void onDisconnected() => print("❌ MQTT Disconnected!");
+  void onConnected() => print(" MQTT Connected!"); ///like events
+  void onDisconnected() => print(" MQTT Disconnected!");
 
-  // ✅ Fix: Change function parameter to `MqttSubscription`
-  void onSubscribed(MqttSubscription subscription) {
-    print("✅ Subscribed to: ${subscription.topic} with QoS: ${subscription.maximumQos}");
+  void onSubscribed(MqttSubscription subscription) { ///prints the subscribed topic
+    print("Subscribed to: ${subscription.topic} with QoS: ${subscription.maximumQos}");
   }
 
-  void publishToMQTT(String topic, String message) {
+  void publishToMQTT(String topic, String message) {  ///takes the topic and message as a param
     if (mqttClient.connectionStatus?.state == MqttConnectionState.connected) {
-      Uint8Buffer payload = Uint8Buffer();
+      Uint8Buffer payload = Uint8Buffer(); ///transform the text to into bytes
+      ///encode it cause we use binary
       payload.addAll(utf8.encode(message));
       mqttClient.publishMessage(topic, MqttQos.atLeastOnce, payload);
-      print("✅ Published to MQTT: $message");
+      print(" Published to MQTT: $message");
     } else {
-      print("⚠️ MQTT Not Connected. Attempting Reconnect...");
+      print(" MQTT Not Connected. Attempting Reconnect...");
       setupMQTT();
     }
   }
-
   void subscribeToMQTT(String topic) {
     if (mqttClient.connectionStatus?.state == MqttConnectionState.connected) {
       mqttClient.subscribe(topic, MqttQos.atMostOnce);
       mqttClient.updates.listen((List<MqttReceivedMessage<MqttMessage>> messages) {
+
+        ////extract the message and decode it
         final MqttPublishMessage receivedMessage = messages[0].payload as MqttPublishMessage;
 
         final Uint8Buffer? payloadBuffer = receivedMessage.payload.message;
         if (payloadBuffer == null || payloadBuffer.isEmpty) {
-          print("⚠️ Received empty payload on [$topic]");
+          print(" Received empty payload on [$topic]");
           return;
         }
-
         final String message = utf8.decode(payloadBuffer.toList());
-        print("✅ MQTT Message Received on [$topic]: $message");
+        print("MQTT Message Received on [$topic]: $message");
       });
-
-      print("✅ Subscribed to MQTT Topic: $topic");
+      print(" Subscribed to MQTT Topic: $topic");
     } else {
-      print("⚠️ MQTT Not Connected. Cannot Subscribe.");
+      print(" MQTT Not Connected. Cannot Subscribe.");
     }
   }
 }
