@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:se_things_demo/another_service.dart';
 import 'ble_service.dart';
 import 'mqtt_service.dart';
 
 void main() {
   runApp(MyApp());
 }
-
 class MyApp extends HookWidget {
   final BLEManager bleManager = BLEManager();
-  final MQTTManager mqttManager = MQTTManager();
+  final MQTTManager mqttEMQX = MQTTManager(); /// MQTT Client for EMQX
+  final hive_service mqttHiveMQ = hive_service(); /// MQTT Client for HiveMQ
 
   Future<void> requestLocationPermission() async {
     if (await Permission.location.isDenied) {
@@ -24,23 +25,23 @@ class MyApp extends HookWidget {
     final devices = useState<List<BluetoothDevice>>([]);
 
     useEffect(() {
-      mqttManager.setupMQTT();
+      mqttEMQX.setupMQTT(); /// Connect to EMQX
+      mqttHiveMQ.setupMQTT(); /// Connect to HiveMQ
       return null;
     }, []);
 
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(title: Text('BLE & MQTT5 App')),
+        appBar: AppBar(title: Text('BLE & Dual MQTT5 Clients')),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              // Scan for BLE Devices
+              /// Scan for BLE Devices
               ElevatedButton(
                 onPressed: () async {
                   await requestLocationPermission();
                   devices.value = [];
-
                   bleManager.scanAndListDevices((device) {
                     if (!devices.value.contains(device)) {
                       devices.value = [...devices.value, device]; // Updating state with a new list
@@ -51,7 +52,7 @@ class MyApp extends HookWidget {
               ),
               SizedBox(height: 10),
 
-              // List of Available BLE Devices
+              /// List of Available BLE Devices
               Expanded(
                 child: ListView.builder(
                   itemCount: devices.value.length,
@@ -67,10 +68,9 @@ class MyApp extends HookWidget {
                   },
                 ),
               ),
-
               SizedBox(height: 10),
 
-              // Send JSON Data via BLE
+              /// Send JSON Data via BLE
               ElevatedButton(
                 onPressed: () {
                   Map<String, dynamic> jsonData = {
@@ -81,34 +81,34 @@ class MyApp extends HookWidget {
                 },
                 child: Text("Send JSON via BLE"),
               ),
-
               SizedBox(height: 10),
-              // Send MQTT Message
+
+              /// Send MQTT Message to EMQX
               ElevatedButton(
                 onPressed: () {
                   String jsonString = '{"relayNo": 2, "state": 1}';
-                  mqttManager.publishToMQTT("okta_t/relay",jsonString);
+                  mqttEMQX.publishToMQTT("okta_t/relay", jsonString);
                 },
-                child: Text("Send MQTT Message"),
+                child: Text("Send MQTT Message to EMQX"),
               ),
 
-              // Subscribe to MQTT Topic
+              /// Send MQTT Message to HiveMQ
               ElevatedButton(
                 onPressed: () {
-                  mqttManager.subscribeToMQTT("okta_t/light");
-                  //mqttManager.subscribeToMQTT("okta_t/temp");
-                  //mqttManager.subscribeToMQTT("okta_t/temp");
-
+                  String jsonString = '{"relayNo": 3, "state": 1}';
+                  mqttHiveMQ.publishToMQTT("hive/control", jsonString);
                 },
-                child: Text("Subscribe to MQTT"),
+                child: Text("Send MQTT Message to HiveMQ"),
               ),
 
-              SizedBox(height: 10),
-
-              // Disconnect BLE
+              /// Disconnect BLE & MQTT
               ElevatedButton(
-                onPressed: () => bleManager.disconnect(),
-                child: Text("Disconnect BLE"),
+                onPressed: () {
+                  bleManager.disconnect();
+                  mqttEMQX.onDisconnected();
+                  mqttHiveMQ.onDisconnected();
+                },
+                child: Text("Disconnect BLE & MQTT"),
               ),
             ],
           ),

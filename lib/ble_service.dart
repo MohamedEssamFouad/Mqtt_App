@@ -23,12 +23,10 @@ class BLEManager {
         }
       }
     });
-
     await Future.delayed(Duration(seconds: 10)); ///will wait the 10scond
     FlutterBluePlus.stopScan(); ///then stop
     subscription.cancel(); ///close the streamm
   }
-
   // Connect to a selected BLE device
   Future<void> connectToDevice(BluetoothDevice device) async {
     try {
@@ -40,7 +38,6 @@ class BLEManager {
       print(" Failed to connect: $e");
     }
   }
-
   // Discover services and find the characteristics for each one like the read and write and so on
   Future<void> discoverServices() async {
     if (connectedDevice == null) return;
@@ -56,23 +53,19 @@ class BLEManager {
           writeCharacteristic = characteristic;
           print(" Found Write Characteristic: ${characteristic.uuid}");
         }
-
         if (characteristic.properties.read) {
           notifyCharacteristics.add(characteristic);
           print(" Found read Characteristic: ${characteristic.uuid}");
         }
       }
     }
-
     if (writeCharacteristic == null) {
       print(" No writable characteristic found!");
     }
-
     if (notifyCharacteristics.isNotEmpty) {
       await enableNotifications();
     }
   }
-
   // Enable notifications to receive real-time data
   Future<void> enableNotifications() async {
     for (var characteristic in notifyCharacteristics) {
@@ -84,7 +77,6 @@ class BLEManager {
       print("read charsss for ${characteristic.uuid}");
     }
   }
-
   // Send JSON Data to the Kittt
   Future<void> sendJsonData(Map<String, dynamic> jsonData) async {
     if (writeCharacteristic == null) {
